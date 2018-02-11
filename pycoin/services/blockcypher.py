@@ -11,8 +11,9 @@ from pycoin.tx.Tx import Spendable, Tx
 class BlockcypherProvider(object):
     def __init__(self, api_key="", netcode=None):
         NETWORK_PATHS = {
-            "BTC": "main",
-            "XTN": "test3"
+            "BTC": "btc/main",
+            "XTN": "btc/test3",
+            "DASH": "dash/main",
         }
 
         if netcode is None:
@@ -22,24 +23,46 @@ class BlockcypherProvider(object):
         self.api_key = api_key
 
     def base_url(self, args):
-        return "https://api.blockcypher.com/v1/btc/%s/%s" % (self.network_path, args)
+        return "https://api.blockcypher.com/v1/%s/%s" % (self.network_path, args)
 
-    def spendables_for_address(self, address):
+    def spendables_for_address(self, address,amount = None ):
         """
         Return a list of Spendable objects for the
         given bitcoin address.
         """
-        spendables = []
-        url_append = "?unspentOnly=true&token=%s&includeScript=true" % self.api_key
-        url = self.base_url("addrs/%s%s" % (address, url_append))
-        result = json.loads(urlopen(url).read().decode("utf8"))
-        for txn in result.get("txrefs", []):
-            coin_value = txn.get("value")
-            script = h2b(txn.get("script"))
-            previous_hash = h2b_rev(txn.get("tx_hash"))
-            previous_index = txn.get("tx_output_n")
-            spendables.append(Spendable(coin_value, script, previous_hash, previous_index))
-        return spendables
+        if amount is None :
+            spendables = []
+            url_append = "?unspentOnly=true&token=%s&includeScript=true" % self.api_key
+            url = self.base_url("addrs/%s%s" % (address, url_append))
+            result = json.loads(urlopen(url).read().decode("utf8"))
+            for txn in result.get("txrefs", []):
+                coin_value = txn.get("value")
+                script = h2b(txn.get("script"))
+                previous_hash = h2b_rev(txn.get("tx_hash"))
+                previous_index = txn.get("tx_output_n")
+                spendables.append(Spendable(coin_value, script, previous_hash, previous_index))
+            return spendables
+
+        else :
+            spendables = []
+            url_append = "?unspentOnly=true&token=%s&includeScript=true" % self.api_key
+            url = self.base_url("addrs/%s%s" % (address, url_append))
+            result = json.loads(urlopen(url).read().decode("utf8"))
+            total_amount = 0
+            list_spend = result.get("txrefs", [])
+            if len(list_spend) == 0:
+                raise Exception("No spendable outputs found")
+            unspents = sorted(list_spend, key=lambda d: d['value'], reverse = True)
+            for txn in unspents:
+                coin_value = txn.get("value")
+                total_amount = total_amount + coin_value
+                script = h2b(txn.get("script"))
+                previous_hash = h2b_rev(txn.get("tx_hash"))
+                previous_index = txn.get("tx_output_n")
+                spendables.append(Spendable(coin_value, script, previous_hash, previous_index))
+                if total_amount > amount :
+                    break
+            return [spendables, total_amount]
 
     def tx_for_tx_hash(self, tx_hash):
         """
@@ -69,5 +92,5 @@ class BlockcypherProvider(object):
         """
         url = self.base_url("txs/push")
         data = {"tx": tx.as_hex()}
-        result = json.loads(urlopen(url, data=json.dumps(data)).read().decode("utf8"))
+        result = json.loads(urlopen(url, data=json.dumps(data).encode("utf8")).read().decode("utf8"))
         return result

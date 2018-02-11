@@ -1,6 +1,7 @@
 
 from ..encoding import wif_to_secret_exponent
 from ..convention import tx_fee
+from ..services import blockcypher as bc
 
 from .Spendable import Spendable
 from .Tx import Tx
@@ -217,3 +218,41 @@ def create_signed_tx(spendables, payables, wifs=[], fee="standard",
             raise SecretExponentMissing("failed to sign spendable for %s" %
                                         tx.unspents[idx].bitcoin_address())
     return tx
+
+
+
+def create_simple_raw_transaction(from_address, to_address, amount, fee, change_address = None, lock_time=0, version=1, api_key = None, netcode = 'XTN' ) :
+    #Edit service which you want to use
+    #also check api_key if service need
+    d = bc.BlockcypherProvider(netcode = netcode,api_key = api_key)  #"bad04ad7717248d3a8146069bd71020f
+    response =  d.spendables_for_address(from_address, amount)
+    spendables = response[0]
+    change = response[1] - amount-fee
+    if change_address is None :
+        change_address = from_address
+    payables = [(to_address,amount),(change_address,change)]
+    trx = create_tx(spendables,payables,fee = fee, lock_time = lock_time, version = version)
+    return trx
+
+#n3FqdJB2aw2DBkPddaxXMpnWVhc9pYwA3j myEDwz2kn1SKhB5MdEAWMjruZtUFvvNHmu
+
+def broadcast_tx(tx, api_key, netcode = 'XTN'):
+    d = bc.BlockcypherProvider(netcode = netcode,api_key = api_key)
+    return d.broadcast_tx(tx)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
