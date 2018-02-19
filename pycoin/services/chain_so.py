@@ -55,5 +55,5 @@ class ChainSoProvider(object):
         url = self.base_url('get_address_balance', address)
         url = url+"/6"
         r = json.loads(urlopen(url).read().decode("utf8"))
-        blance = r['confirmed_balance']
+        blance = r['data']['confirmed_balance']
         return blance
