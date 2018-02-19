@@ -11,10 +11,14 @@ from pycoin.tx.Tx import Spendable, Tx
 class ChainSoProvider(object):
     def __init__(self, netcode=None):
         NETWORK_PATHS = {
-            "BTC": "BTC",
+            "BTC": "BTCTEST",
             "XTN": "BTCTEST",
-            "DOGE": "DOGE",
+            "DOGE": "DOGETEST",
             "XDT": "DOGETEST",
+            "LTC" : "LTCTEST",
+            "LTCTEST" : "LTCTEST",
+            "DASH" : "DASHTEST",
+            "DASHTEST" : "DASHTEST"
         }
         if netcode is None:
             netcode = get_current_netcode()
@@ -46,3 +50,10 @@ class ChainSoProvider(object):
         r = json.loads(urlopen(url).read().decode("utf8"))
         tx = Tx.parse(io.BytesIO(h2b(r.get("data").get("tx_hex"))))
         return tx
+
+    def get_balance(self, address):
+        url = self.base_url('get_address_balance', address)
+        url = url+"/6"
+        r = json.loads(urlopen(url).read().decode("utf8"))
+        blance = r['confirmed_balance']
+        return blance
