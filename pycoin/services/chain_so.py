@@ -51,9 +51,9 @@ class ChainSoProvider(object):
         tx = Tx.parse(io.BytesIO(h2b(r.get("data").get("tx_hex"))))
         return tx
 
-    def get_balance(self, address):
+    def get_balance(self, address, min_conf = 6):
         url = self.base_url('get_address_balance', address)
-        url = url+"/6"
+        url = url+str(min_conf)
         r = json.loads(urlopen(url).read().decode("utf8"))
         blance = r['data']['confirmed_balance']
         return blance
