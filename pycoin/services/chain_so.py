@@ -11,13 +11,13 @@ from pycoin.tx.Tx import Spendable, Tx
 class ChainSoProvider(object):
     def __init__(self, netcode=None):
         NETWORK_PATHS = {
-            "BTC": "BTCTEST",
-            "XTN": "BTCTEST",
-            "DOGE": "DOGETEST",
-            "XDT": "DOGETEST",
-            "LTC" : "LTCTEST",
+            "BTC": "BTC",
+            "BTCTEST": "BTCTEST",
+            "DOGE": "DOGE",
+            "DOGETEST": "DOGETEST",
+            "LTC" : "LTC",
             "LTCTEST" : "LTCTEST",
-            "DASH" : "DASHTEST",
+            "DASH" : "DASH",
             "DASHTEST" : "DASHTEST"
         }
         if netcode is None:

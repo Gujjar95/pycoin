@@ -67,21 +67,42 @@ class InsightProvider(object):
     def get_tx_confirmation_block(self, tx_hash):
         return self.get_tx(tx_hash).confirmation_block_hash
 
-    def spendables_for_address(self, bitcoin_address):
+    def spendables_for_address(self, bitcoin_address, amount = None):
         """
         Return a list of Spendable objects for the
         given bitcoin address.
         """
         URL = "%s/addr/%s/utxo" % (self.base_url, bitcoin_address)
+        print(URL)
         r = json.loads(urlopen(URL).read().decode("utf8"))
-        spendables = []
-        for u in r:
-            coin_value = btc_to_satoshi(str(u.get("amount")))
-            script = h2b(u.get("scriptPubKey"))
-            previous_hash = h2b_rev(u.get("txid"))
-            previous_index = u.get("vout")
-            spendables.append(Spendable(coin_value, script, previous_hash, previous_index))
-        return spendables
+        r = sorted(r, key=lambda d: d['amount'], reverse = True)
+        if len(r) == 0:
+                raise Exception("No spendable outputs found")
+        if amount == None:
+            spendables = []
+            for u in r:
+                coin_value = btc_to_satoshi(str(u.get("amount")))
+                script = h2b(u.get("scriptPubKey"))
+                previous_hash = h2b_rev(u.get("txid"))
+                previous_index = u.get("vout")
+                spendables.append(Spendable(coin_value, script, previous_hash, previous_index))
+            return spendables
+        else :
+            total_amount = 0
+            spendables = []
+            for u in r:
+                coin_value = btc_to_satoshi(str(u.get("amount")))
+                script = h2b(u.get("scriptPubKey"))
+                previous_hash = h2b_rev(u.get("txid"))
+                previous_index = u.get("vout")
+                spendables.append(Spendable(coin_value, script, previous_hash, previous_index))
+                total_amount  = total_amount + coin_value
+                if total_amount >= amount :
+                    break
+            return [spendables, total_amount]
+
+
+
 
     def spendables_for_addresses(self, bitcoin_addresses):
         spendables = []
@@ -102,6 +123,12 @@ class InsightProvider(object):
             if err.code == 400:
                 raise ValueError(err.readline())
             raise err
+
+    def get_balance(self, bitcoin_address):
+        URL = "%s/addr/%s/balance" % (self.base_url, bitcoin_address)
+        r = json.loads(urlopen(URL).read().decode("utf8"))
+        return r
+
 
 
 def tx_from_json_dict(r):
